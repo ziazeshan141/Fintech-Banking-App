@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: banking-app
-          image: ziazeshan141/fintech-banking-app:latest
+          image: ziazeshan141/Fintech-Banking-App:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
