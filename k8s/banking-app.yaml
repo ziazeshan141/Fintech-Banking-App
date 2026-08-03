@@ -19,7 +19,7 @@ spec:
           image: ziazeshan141/fintech-banking-app:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8080
+            - containerPort: 8076
           env:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:mysql://mysql-service:3306/bank_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
@@ -60,4 +60,4 @@ spec:
     app: banking-app
   ports:
     - port: 80
-      targetPort: 8080
+      targetPort: 8076
