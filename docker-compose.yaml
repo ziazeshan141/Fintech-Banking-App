@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # Database Service: MySQL 8.0
+  # ==========================================
+  db:
+    image: mysql:8.0
+    container_name: banking_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: bank_db
+      MYSQL_USER: bankuser
+      MYSQL_PASSWORD: bankpassword
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - banking_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # Web Application Service: Spring Boot
+  # ==========================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: banking_app
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/bank_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: bankuser
+      SPRING_DATASOURCE_PASSWORD: bankpassword
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - banking_net
+
+networks:
+  banking_net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
