@@ -17,6 +17,12 @@ provider "aws" {
 # ------------------------------------------------------------------------------
 data "aws_availability_zones" "available" {
   state = "available"
+  
+# Exclude Local Zones / Wavelength zones that might mess up standard VPC subnets
+  filter {
+    name   = "opt-in-status"
+    values = ["opt-in-not-required"]
+  }
 }
 
 # ------------------------------------------------------------------------------
