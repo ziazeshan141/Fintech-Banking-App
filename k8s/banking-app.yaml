@@ -21,6 +21,7 @@ spec:
           ports:
             - containerPort: 8076
           env:
+            # Change "mysql-service" here to your actual MySQL service name if different
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:mysql://mysql-service:3306/bank_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
             - name: SPRING_DATASOURCE_USERNAME
@@ -42,7 +43,7 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
-         
+
 ---
 apiVersion: v1
 kind: Service
@@ -55,6 +56,4 @@ spec:
   ports:
     - port: 80
       targetPort: 8076
-      nodePort: 30964 # Only needed for NodePort type
-    selector:
-      app: banking-app
+      nodePort: 30964 # Ignored automatically if type is LoadBalancer
