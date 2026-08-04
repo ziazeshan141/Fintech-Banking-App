@@ -16,24 +16,18 @@ public class RestAuthApiController {
     @Autowired
     private UserRepository userRepository;
 
-    @GetMapping("/login")
-    public ResponseEntity validateUserEmail(@RequestParam("email") String email) { ... }
+    @GetMapping("/login/{email}")
+    public ResponseEntity<String> validateUserEmail(@PathVariable("email") String email) {
         // Get User Email:
         String userEmail = userRepository.getUserEmail(email);
-        // Init User Password:
         String userPassword = null;
 
-        // Check If Email Is Validate:
-        if(userEmail != null){
+        // Check If Email Is Valid:
+        if (userEmail != null) {
             userPassword = userRepository.getUserPassword(email);
-            // Return Response:
             return new ResponseEntity<>(userPassword, HttpStatus.OK);
-        }else{
-            // Return Response:
+        } else {
             return new ResponseEntity<>("User Not Found", HttpStatus.NOT_FOUND);
         }
-        // ENd Of Check If Email Is Validate.
     }
-    // End f Of Validate User Login.
 }
-// End Of Rest Auth API Controller.
