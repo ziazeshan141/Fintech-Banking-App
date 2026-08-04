@@ -21,6 +21,10 @@ spec:
           ports:
             - containerPort: 8076
           env:
+            - name: SERVER_ADDRESS
+              value: "0.0.0.0"
+            - name: SERVER_PORT
+              value: "8076"
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:mysql://mysql-service:3306/Fintech_Finance_Database?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
             - name: SPRING_DATASOURCE_USERNAME
