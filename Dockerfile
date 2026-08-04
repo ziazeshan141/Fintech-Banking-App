@@ -12,7 +12,7 @@ RUN mvn dependency:go-offline -B
 # Copy application source code
 COPY src ./src
 
-# Build production JAR (skipping unit tests for faster build)
+# Build production WAR (skipping unit tests for faster build)
 RUN mvn clean package -DskipTests
 
 # ==========================================
@@ -25,15 +25,15 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
-# Copy compiled JAR file from the builder stage
-COPY --from=builder /app/target/*.jar app.jar
+# Copy compiled WAR file from the builder stage (renaming to app.jar for entrypoint compatibility)
+COPY --from=builder /app/target/*.war app.jar
 
 # Adjust ownership
 RUN chown -R appuser:appgroup /app
 
 USER appuser
 
-EXPOSE 8080
+EXPOSE 8076
 
 # Configure Environment Variables for Spring Boot
 ENV SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/bank_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC \
@@ -41,8 +41,8 @@ ENV SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/bank_db?useSSL=false&allowPublicK
     SPRING_DATASOURCE_PASSWORD=bankpassword \
     SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
-# Container Healthcheck
+# Container Healthcheck targeting application port 8076
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:8080/ || exit 1
+  CMD wget --quiet --tries=1 --spider http://localhost:8076/login || exit 1
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
