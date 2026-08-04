@@ -4,7 +4,7 @@ metadata:
   name: banking-app-service
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/api/auth/login"
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "8076"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "traffic-port"
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "3"
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10"
