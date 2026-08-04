@@ -17,7 +17,7 @@ public class RestAuthApiController {
     private UserRepository userRepository;
 
     @GetMapping("/login")
-    public ResponseEntity validateUserEmail(@PathVariable("email")String email){
+    public ResponseEntity validateUserEmail(@RequestParam("email") String email) { ... }
         // Get User Email:
         String userEmail = userRepository.getUserEmail(email);
         // Init User Password:
