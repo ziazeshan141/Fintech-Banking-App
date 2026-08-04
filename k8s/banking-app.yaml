@@ -22,7 +22,7 @@ spec:
             - containerPort: 8076
           env:
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:mysql://banking-app-service:3306/bank_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+              value: "jdbc:mysql://mysql-service:3306/bank_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
