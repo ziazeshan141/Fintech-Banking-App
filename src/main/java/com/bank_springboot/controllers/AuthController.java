@@ -1,6 +1,5 @@
 package com.bank_springboot.controllers;
 
-//import com.demo_bank_v1.helpers.Token;
 import com.bank_springboot.mailMessenger.MailMessenger;
 import com.bank_springboot.models.User;
 import com.bank_springboot.repository.UserRepository;
@@ -18,6 +17,7 @@ import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.util.UUID;
 
 @Controller
 public class AuthController {
@@ -28,97 +28,178 @@ public class AuthController {
     @Autowired
     private MailMessenger mailMessenger;
 
-//    @Autowired
-//    private Token generateVerificationToken;
-
+    /**
+     * Display login page.
+     *
+     * Token generation is handled locally using UUID.
+     * This avoids calling MailMessenger while loading the login page.
+     */
     @GetMapping("/login")
-    public ModelAndView getLogin(){
+    public ModelAndView getLogin() {
+
         System.out.println("In Login Page Controller");
-        ModelAndView getLoginPage = new ModelAndView("login");
-        // Set Token String:
-        String token = mailMessenger.generateVerificationToken();
-        // Send Token to View:
-        getLoginPage.addObject("token", token);
-        getLoginPage.addObject("PageTitle", "Login");
-//        getLoginPage.addObject("email", "");
-//        getLoginPage.addObject("password", "");
-        return getLoginPage;
+
+        ModelAndView loginPage = new ModelAndView("login");
+
+        String token = UUID.randomUUID().toString();
+
+        loginPage.addObject("token", token);
+        loginPage.addObject("PageTitle", "Login");
+
+        return loginPage;
     }
 
+    /**
+     * Process login form.
+     */
     @PostMapping("/login")
-    public String login(@RequestParam("email")String email,
-                        @RequestParam("password") String password,
-                        @RequestParam("_token")String token,
-                        Model model,
-                        HttpSession session) throws MessagingException {
+    public String login(
+            @RequestParam("email") String email,
+            @RequestParam("password") String password,
+            @RequestParam("_token") String token,
+            Model model,
+            HttpSession session
+    ) throws MessagingException {
 
-        // TODO: VALIDATE INPUT FIELDS / FORM DATA:
-        if(email.isEmpty() || email == null || password.isEmpty() || password == null){
-            model.addAttribute("error", "Username or Password Cannot be Empty");
+        /*
+         * Validate input values.
+         * Null checks must be performed before calling trim() or isEmpty().
+         */
+        if (email == null || email.trim().isEmpty()
+                || password == null || password.trim().isEmpty()) {
+
+            model.addAttribute(
+                    "error",
+                    "Username or password cannot be empty"
+            );
+
             return "login";
         }
 
-        // TODO: CHECK IF EMAIL EXISTS:
-        String getEmailInDatabase = userRepository.getUserEmail(email);
-        System.out.println("Email: "+getEmailInDatabase);
+        email = email.trim();
 
-        // Check If Email Exists:
-        if(getEmailInDatabase != null){
-            // Get Password In Database:
-            String getPasswordInDatabase = userRepository.getUserPassword(getEmailInDatabase);
-            // Validate Password:
-            if(!BCrypt.checkpw(password, getPasswordInDatabase)){
-                model.addAttribute("error", "Incorrect Username or Password");
-                return "login";
-            }
-            // End Of Validate Password.
+        /*
+         * Check whether the email exists.
+         */
+        String databaseEmail = userRepository.getUserEmail(email);
+
+        System.out.println("Email: " + databaseEmail);
+
+        if (databaseEmail == null) {
+
+            model.addAttribute(
+                    "error",
+                    "Incorrect username or password"
+            );
+
+            return "login";
         }
-        else{
-            model.addAttribute("error", "Something went wrong please contact support");
+
+        /*
+         * Retrieve and validate the password.
+         */
+        String databasePassword =
+                userRepository.getUserPassword(databaseEmail);
+
+        if (databasePassword == null
+                || !BCrypt.checkpw(password, databasePassword)) {
+
+            model.addAttribute(
+                    "error",
+                    "Incorrect username or password"
+            );
+
+            return "login";
+        }
+
+        /*
+         * Check whether the user account is verified.
+         */
+        int verified = userRepository.isVerified(databaseEmail);
+
+        System.out.println("Account verification status: " + verified);
+
+        if (verified != 1) {
+
+            String verificationToken =
+                    userRepository.checkToken(databaseEmail);
+
+            System.out.println(
+                    "Auth Token: " + verificationToken
+            );
+
+            if (verificationToken != null
+                    && !verificationToken.trim().isEmpty()) {
+
+                mailMessenger.sendVerificationEmail(
+                        databaseEmail,
+                        verificationToken
+                );
+            }
+
+            model.addAttribute(
+                    "error",
+                    "This account is not yet verified. "
+                            + "Please check your email and verify the account."
+            );
+
+            return "login";
+        }
+
+        /*
+         * Retrieve the complete user record.
+         */
+        User user =
+                userRepository.getUserDetails(databaseEmail);
+
+        if (user == null) {
+
+            model.addAttribute(
+                    "error",
+                    "Unable to retrieve user account details"
+            );
+
             return "error";
         }
-        // Check If Email Exists.
 
-        // TODO : CHECK IF USER ACCOUNT IS VERIFIED:
-        int verified = userRepository.isVerified(getEmailInDatabase);
-        System.out.println(verified);
-
-        // Check If Account is verified:
-        if (verified != 1){
-            String verificationToken=userRepository.checkToken(getEmailInDatabase);
-            System.out.println("Auth Token: "+verificationToken);
-            mailMessenger.sendVerificationEmail(getEmailInDatabase,verificationToken);
-            String msg = "This Account is not yet Verified, please check email and verify account";
-            model.addAttribute("error", msg);
-            return "login";
-        }
-
-        // TODO: PROCEED TO LOG THE USER IN:
-        User user = userRepository.getUserDetails(getEmailInDatabase);
-
-        // Set Session Attributes:
+        /*
+         * Create authenticated session.
+         */
         session.setAttribute("user", user);
         session.setAttribute("token", token);
         session.setAttribute("authenticated", true);
+
         return "redirect:/app/dashboard";
     }
-    // End Of Authentication Method.
 
-//    @GetMapping("/logout")
-//    public String logout(HttpSession session, RedirectAttributes redirectAttributes){
-//        session.invalidate();
-//        redirectAttributes.addFlashAttribute("logged_out", "Logged out successfully");
-//        return "redirect:/login";
-//    }
+    /**
+     * Log out and invalidate the current session.
+     */
     @GetMapping("/logout")
-    public String logout(HttpServletRequest request, HttpServletResponse response,RedirectAttributes redirectAttributes){
-        HttpSession session=request.getSession(false);
-        if(session!=null){
+    public String logout(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            RedirectAttributes redirectAttributes
+    ) {
+
+        HttpSession session = request.getSession(false);
+
+        if (session != null) {
+
+            session.removeAttribute("user");
             session.removeAttribute("email");
             session.removeAttribute("password");
+            session.removeAttribute("token");
+            session.removeAttribute("authenticated");
+
             session.invalidate();
-            redirectAttributes.addFlashAttribute("logged_out", "Logged out successfully");
         }
+
+        redirectAttributes.addFlashAttribute(
+                "logged_out",
+                "Logged out successfully"
+        );
+
         return "redirect:/login?logout=true";
     }
 }
