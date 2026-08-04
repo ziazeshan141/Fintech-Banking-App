@@ -55,3 +55,6 @@ spec:
   ports:
     - port: 80
       targetPort: 8076
+      nodePort: 30964 # Only needed for NodePort type
+    selector:
+      app: banking-app
